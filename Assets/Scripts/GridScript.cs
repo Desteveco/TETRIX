@@ -1,11 +1,19 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class GridScript : MonoBehaviour
 {
     public Transform[,] grid;
     public int width, height;
+    public int currentScore = 0;
+    public TextMeshProUGUI scoreText;
+    public GameObject combo1;
+    public GameObject combo2;
+    public GameObject combo3;
+    public GameObject combo4;
+
 
     void Awake()
     {
@@ -14,7 +22,6 @@ public class GridScript : MonoBehaviour
 
     public void UpdateGrid(Transform tetromino)
     {
-        // Limpiamos la posición anterior de este tetromino en la matriz
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
@@ -26,7 +33,6 @@ public class GridScript : MonoBehaviour
             }
         }
 
-        // Registramos las nuevas posiciones de cada cuadradito individual (mino)
         foreach (Transform mino in tetromino)
         {
             Vector2 pos = Round(mino.position);
@@ -45,8 +51,6 @@ public class GridScript : MonoBehaviour
     public bool IsInsideBorder(Vector2 pos)
     {
         return (int)pos.x >= 0 && (int)pos.x < width && (int)pos.y >= 0; 
-        // Nota: Permitimos que y sea mayor que el límite superior para el Spawn, 
-        // pero validamos el suelo y los laterales.
     }
 
     public Transform GetTransformAtGridPosition(Vector2 pos)
@@ -87,16 +91,41 @@ public class GridScript : MonoBehaviour
 
     public void CheckForLines()
     {
+        int linesCleared = 0;
+
         for (int y = 0; y < height; y++)
         {
             if (LineIsFull(y))
             {
                 DeleteLine(y);
                 DecreaseRowsAbove(y + 1);
-                y--; // Re-revisar la misma fila ya que la de arriba bajó
+                y--;
+                linesCleared++;
             }
         }
+
+        if (linesCleared > 0)
+        {
+            AddScore(linesCleared); 
+            ShowCombo(linesCleared);
+        }
     }
+    void AddScore(int lines)
+    {
+        switch (lines)
+        {
+            case 1: currentScore += 100; break;
+            case 2: currentScore += 300; break;
+            case 3: currentScore += 500; break;
+            case 4: currentScore += 800; break; 
+        }
+
+        if (scoreText != null)
+        {
+            scoreText.text = "Score: " + currentScore.ToString();
+        }
+    }
+
 
     bool LineIsFull(int y)
     {
@@ -143,4 +172,31 @@ public class GridScript : MonoBehaviour
             }
         }
     }
+    void ShowCombo(int lines)
+{
+    GameObject textToShow = null;
+
+    switch (lines)
+    {
+        case 1:
+            textToShow = combo1;
+            break;
+        case 2:
+            textToShow = combo2;
+            break;
+        case 3:
+            textToShow = combo3;
+            break;
+        case 4:
+            textToShow = combo4;
+            break;
+    }
+
+    if (textToShow != null)
+    {
+        textToShow.SetActive(true);
+        Animator anim = textToShow.GetComponent<Animator>();
+        anim.Play("ComboAppear", 0, 0f);
+    }
+}
 }
