@@ -5,19 +5,33 @@ using UnityEngine;
 public class GameManager : MonoBehaviour
 {
     public GameObject[] Tetrominos;
-    public float movementFrequency = 0.8f;
+    public float baseFrequency = 0.8f; 
+    private float movementFrequency; 
     private float passedTime = 0;
     private GameObject currentTetromino;
 
-    // Start is called before the first frame update
+    public GameObject gameOverText; 
+
+    private bool isGameOver = false;
+    [Header("Next Piece Settings")]
+    public Transform previewPoint; 
+    private int nextIndex;
+    private GameObject nextTetrominoPreview;
+
     void Start()
     {
+        movementFrequency = baseFrequency;
+        gameOverText.SetActive(false);
+        nextIndex = Random.Range(0, Tetrominos.Length);
         SpawnTetromino();
     }
 
-    // Update is called once per frame
     void Update()
     {
+        if (isGameOver) return;
+
+        UpdateSpeed();
+
         passedTime += Time.deltaTime;
         if (passedTime >= movementFrequency)
         {
@@ -26,6 +40,13 @@ public class GameManager : MonoBehaviour
         }
         UserInput();
     }
+    void UpdateSpeed()
+{
+    int score = GetComponent<GridScript>().currentScore;
+    
+    float level = Mathf.Floor(score / 1000f);
+    baseFrequency = Mathf.Max(0.8f - (level * 0.1f), 0.2f);
+}
 
     void UserInput()
     {
@@ -49,20 +70,29 @@ public class GameManager : MonoBehaviour
         {
             HardDrop();
         }
+
         if (Input.GetKey(KeyCode.DownArrow))
         {
-            movementFrequency = 0.2f;
+            movementFrequency = 0.1f;
         }
         else
         {
-            movementFrequency = 0.8f;
+            movementFrequency = baseFrequency;
         }
     }
 
     void SpawnTetromino()
     {
-        int index = Random.Range(0, Tetrominos.Length);
-        currentTetromino = Instantiate(Tetrominos[index], new Vector3(5, 18, 0), Quaternion.identity);
+        currentTetromino = Instantiate(Tetrominos[nextIndex], new Vector3(5, 18, 0), Quaternion.identity);
+
+        if (nextTetrominoPreview != null)
+        {
+            Destroy(nextTetrominoPreview);
+        }
+
+        nextIndex = Random.Range(0, Tetrominos.Length);
+
+        ShowNextPiece();
 
         if (!IsValidPosition())
         {
@@ -76,7 +106,7 @@ public class GameManager : MonoBehaviour
         if (!IsValidPosition())
         {
             currentTetromino.transform.position -= direction;
-            
+
             if (direction == Vector3.down)
             {
                 LockTetromino();
@@ -92,7 +122,6 @@ public class GameManager : MonoBehaviour
         }
 
         currentTetromino.transform.position -= Vector3.down;
-
         LockTetromino();
     }
 
@@ -102,6 +131,7 @@ public class GameManager : MonoBehaviour
         CheckForLines();
         SpawnTetromino();
     }
+
     bool IsValidPosition()
     {
         return GetComponent<GridScript>().IsValidPosition(currentTetromino.transform);
@@ -111,15 +141,50 @@ public class GameManager : MonoBehaviour
     {
         GetComponent<GridScript>().CheckForLines();
     }
+
     void GameOver()
     {
+        if (isGameOver) return;
+        isGameOver = true;
+
         Debug.Log("Game Over! The stack reached the top.");
-        
+
         Destroy(currentTetromino);
 
-        Time.timeScale = 0; 
+        gameOverText.SetActive(true);
 
+        ChangeAllBlocksToGray();
+
+        Time.timeScale = 0f;
         this.enabled = false;
+    }
+    void ShowNextPiece()
+    {
+        nextTetrominoPreview = Instantiate(Tetrominos[nextIndex], previewPoint.position, Quaternion.identity);
         
     }
+
+public Material grayMaterial; 
+
+void ChangeAllBlocksToGray()
+{
+    GridScript gridScript = GetComponent<GridScript>();
+    
+    for (int y = 0; y < gridScript.height; y++)
+    {
+        for (int x = 0; x < gridScript.width; x++)
+        {
+            if (gridScript.grid[x, y] != null)
+            {
+                SpriteRenderer sr = gridScript.grid[x, y].GetComponent<SpriteRenderer>();
+                if (sr != null)
+                {
+                    sr.material = grayMaterial;
+                    sr.color = Color.white; 
+                }
+            }
+        }
+    }
+}
+
 }
