@@ -13,7 +13,7 @@ public class GridScript : MonoBehaviour
     public GameObject combo2;
     public GameObject combo3;
     public GameObject combo4;
-
+    private int comboCount = 0;
 
     void Awake()
     {
@@ -106,19 +106,29 @@ public class GridScript : MonoBehaviour
 
         if (linesCleared > 0)
         {
-            AddScore(linesCleared); 
-            ShowCombo(linesCleared);
+            comboCount++; 
+            AddScore(linesCleared, comboCount); 
+            ShowCombo(comboCount);
+        }
+        else
+        {
+            comboCount = 0;
+            HideAllCombos();
         }
     }
-    void AddScore(int lines)
+    void AddScore(int lines, int combo)
     {
+        int basePoints = 0;
+
         switch (lines)
         {
-            case 1: currentScore += 100; break;
-            case 2: currentScore += 300; break;
-            case 3: currentScore += 500; break;
-            case 4: currentScore += 800; break; 
+            case 1: basePoints = 100; break;
+            case 2: basePoints = 300; break;
+            case 3: basePoints = 500; break;
+            case 4: basePoints = 800; break; 
         }
+
+        currentScore += basePoints * combo;
 
         if (scoreText != null)
         {
@@ -172,31 +182,33 @@ public class GridScript : MonoBehaviour
             }
         }
     }
-    void ShowCombo(int lines)
-{
-    GameObject textToShow = null;
-
-    switch (lines)
+    void ShowCombo(int currentCombo)
     {
-        case 1:
-            textToShow = combo1;
-            break;
-        case 2:
-            textToShow = combo2;
-            break;
-        case 3:
-            textToShow = combo3;
-            break;
-        case 4:
-            textToShow = combo4;
-            break;
-    }
+        HideAllCombos(); // Limpiamos el texto anterior
 
-    if (textToShow != null)
-    {
-        textToShow.SetActive(true);
-        Animator anim = textToShow.GetComponent<Animator>();
-        anim.Play("ComboAppear", 0, 0f);
+        GameObject textToShow = null;
+
+        // Decidimos qué objeto mostrar según el contador acumulado
+        if (currentCombo == 1) textToShow = combo1;
+        else if (currentCombo == 2) textToShow = combo2;
+        else if (currentCombo == 3) textToShow = combo3;
+        else if (currentCombo >= 4) textToShow = combo4;
+
+        if (textToShow != null)
+        {
+            textToShow.SetActive(true);
+            Animator anim = textToShow.GetComponent<Animator>();
+            if (anim != null)
+            {
+                anim.Play("ComboAppear", 0, 0f);
+            }
+        }
     }
-}
+    void HideAllCombos()
+    {
+        if (combo1) combo1.SetActive(false);
+        if (combo2) combo2.SetActive(false);
+        if (combo3) combo3.SetActive(false);
+        if (combo4) combo4.SetActive(false);
+    }
 }
